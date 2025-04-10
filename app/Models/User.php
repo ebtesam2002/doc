@@ -19,6 +19,7 @@ class User extends Authenticatable
         'birth_date',
         'password',
         'role', 
+        'profile_picture', 
     ];
 
     protected $hidden = [
@@ -28,10 +29,19 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'birth_date' => 'date', 
     ];
 
     public function isAdmin()
     {
         return $this->role === 'admin';
+    }
+
+    
+    public function getProfilePictureUrlAttribute()
+    {
+        return $this->profile_picture 
+            ? asset('storage/' . $this->profile_picture) 
+            : asset('default-avatar.png'); 
     }
 }

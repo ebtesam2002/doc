@@ -3,7 +3,7 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminAuthController;
-
+use App\Http\Controllers\UserProfileController;
 // مسارات تسجيل المستخدم
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -30,3 +30,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'logout']);
     Route::post('/admin/change-password', [AdminAuthController::class, 'changePassword']);
 });
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/profile/update', [UserProfileController::class, 'update']);
+});
+
+
+// هذا الـ route سيقوم بإرجاع بيانات البروفايل
+Route::middleware('auth:sanctum')->get('/profile', [UserProfileController::class, 'getProfile']);
