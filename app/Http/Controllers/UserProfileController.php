@@ -16,7 +16,7 @@ class UserProfileController extends Controller
 
         // التحقق من البيانات المدخلة
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|max:255',
+            'username' => 'nullable|string|max:255',
             'location' => 'nullable|string|max:255',
             'birthday' => 'nullable|date',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -27,7 +27,10 @@ class UserProfileController extends Controller
         }
 
         // تحديث البيانات
-        $user->username = $request->username;
+        if ($request->filled('username')) {
+            $user->username = $request->username;
+        }
+
         $user->location = $request->location;
         $user->birth_date = $request->birth_date;
 
