@@ -18,8 +18,14 @@ class User extends Authenticatable
         'location',
         'birth_date',
         'password',
-        'role', 
-        'profile_picture', 
+        'role',
+        'specialization',
+        'license_number',
+        'verification_code',
+        'is_verified',
+        'profile_picture', // added profile_picture
+        'rate',             // added rate
+        'schedule',         // added schedule
     ];
 
     protected $hidden = [
@@ -29,7 +35,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'birth_date' => 'date', 
+        'birth_date' => 'date',
     ];
 
     public function isAdmin()
@@ -37,11 +43,17 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
-    
+    // Accessor for profile picture URL
     public function getProfilePictureUrlAttribute()
     {
         return $this->profile_picture 
             ? asset('storage/' . $this->profile_picture) 
-            : asset('default-avatar.png'); 
+            : asset('default-avatar.png');
+    }
+
+    // Optionally, add accessor for schedule if it's stored as JSON
+    public function getScheduleAttribute($value)
+    {
+        return json_decode($value); // Assuming schedule is stored as JSON in the database
     }
 }

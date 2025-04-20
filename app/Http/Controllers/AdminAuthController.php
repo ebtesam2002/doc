@@ -16,20 +16,19 @@ class AdminAuthController extends Controller
             'password' => 'required'
         ]);
 
-        // البحث عن المستخدم بواسطة الإيميل فقط
+        
         $user = User::where('email', $request->email)->first();
 
-        // التحقق من صحة الإيميل وكلمة المرور
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        // التأكد أن المستخدم هو أدمن
+       
         if ($user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // إنشاء التوكن
+        
         $token = $user->createToken('admin-token')->plainTextToken;
 
         return response()->json([
