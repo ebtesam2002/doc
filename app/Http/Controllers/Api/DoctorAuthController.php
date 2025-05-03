@@ -143,4 +143,23 @@ class DoctorAuthController extends Controller
 
         return response()->json(['message' => 'Password changed successfully']);
     }
+
+    public function getDoctorsBySpecialization($specialization)
+    {
+        $doctors = User::where('role', 'doctor')
+                        ->where('specialization', $specialization)
+                        ->select('id', 'username', 'profile_picture', 'specialization')
+                        ->get();
+
+        return response()->json([
+            'status' => true,
+            'doctors' => $doctors->map(function ($doctor) {
+                return [
+                    'name' => $doctor->username,
+                    'image' => asset('storage/' . $doctor->profile_picture), 
+                    'specialization' => $doctor->specialization,
+                ];
+            })
+        ]);
+    }
 }

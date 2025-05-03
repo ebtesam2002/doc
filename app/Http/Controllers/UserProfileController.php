@@ -26,7 +26,6 @@ class UserProfileController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        
         if ($request->filled('username')) {
             $user->username = $request->username;
         }

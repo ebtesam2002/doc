@@ -23,9 +23,8 @@ class User extends Authenticatable
         'license_number',
         'verification_code',
         'is_verified',
-        'profile_picture', // added profile_picture
-        'rate',             // added rate
-        'schedule',         // added schedule
+        'profile_picture', 
+        
     ];
 
     protected $hidden = [
@@ -43,7 +42,7 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
-    // Accessor for profile picture URL
+    
     public function getProfilePictureUrlAttribute()
     {
         return $this->profile_picture 
@@ -51,9 +50,24 @@ class User extends Authenticatable
             : asset('default-avatar.png');
     }
 
-    // Optionally, add accessor for schedule if it's stored as JSON
+   
     public function getScheduleAttribute($value)
     {
-        return json_decode($value); // Assuming schedule is stored as JSON in the database
+        return json_decode($value); 
+    }
+
+       
+    public function favouriteDoctors()
+    {
+        return $this->belongsToMany(User::class, 'favourites', 'user_id', 'doctor_id')
+            ->where('role', 'doctor')
+            ->withTimestamps();
+    }
+
+   
+    public function favouredByUsers()
+    {
+        return $this->belongsToMany(User::class, 'favourites', 'doctor_id', 'user_id')
+            ->withTimestamps();
     }
 }
