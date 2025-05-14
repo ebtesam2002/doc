@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -95,44 +98,88 @@ class AuthController extends Controller
     // Forgot Password (Request Reset Link)
     public function forgotPassword(Request $request)
     {
-        $request->validate(['email' => 'required|email']);
+        $request->validate([
+            'email' => 'required|email|exists:users,email'
+        ]);
 
-        
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            return response()->json(['message' => 'Email not found'], 404);
-        }
+        $code = rand(1000, 9999); // 4-digit code
 
-        Password::sendResetLink($request->only('email'));
+        // Delete old codes
+        DB::table('password_resets_codes')->where('email', $request->email)->delete();
 
-        return response()->json(['message' => 'Password reset link sent to your email.']);
+        // Insert new code
+        DB::table('password_resets_codes')->insert([
+            'email' => $request->email,
+            'code' => $code,
+            'created_at' => now(),
+            'verified' => false
+        ]);
+
+        // Send the code via email
+        Mail::raw("Your password reset code is: $code", function ($message) use ($request) {
+            $message->to($request->email)
+                    ->subject('Password Reset Code');
+        });
+
+        return response()->json(['message' => 'Verification code sent to your email.']);
     }
 
-    // Reset Password
+    // Verify code
+    public function verifyCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|digits:4',
+        ]);
+
+        $record = DB::table('password_resets_codes')
+                    ->where('code', $request->code)
+                    ->first();
+
+        if (!$record) {
+            return response()->json(['message' => 'Invalid code'], 400);
+        }
+
+        // Update verified status
+        DB::table('password_resets_codes')
+            ->where('code', $request->code)
+            ->update(['verified' => true]);
+
+        return response()->json([
+            'message' => 'Code verified successfully.',
+            'email' => $record->email
+        ]);
+    }
+
+    // Reset password (no email required)
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
+            'email' => 'required|email|exists:users,email',
             'password' => ['required', 'confirmed', PasswordRule::min(8)->letters()->numbers()->symbols()],
         ]);
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->forceFill(['password' => Hash::make($password)])->save();
+        $record = DB::table('password_resets_codes')
+                    ->where('email', $request->email)
+                    ->where('verified', true)
+                    ->first();
 
-                
-                $user->tokens()->delete();
-            }
-        );
+        if (!$record) {
+            return response()->json(['message' => 'You must verify the code first.'], 403);
+        }
 
-        return $status === Password::PASSWORD_RESET
-            ? response()->json(['message' => 'Password reset successful.'])
-            : response()->json(['message' => 'Invalid token or email.'], 400);
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $user->update(['password' => Hash::make($request->password)]);
+
+        // Cleanup
+        DB::table('password_resets_codes')->where('email', $request->email)->delete();
+
+        return response()->json(['message' => 'Password reset successful.']);
     }
 
-    // Verify Email
     public function verifyEmail(Request $request, $id, $hash)
     {
         $user = User::find($id);

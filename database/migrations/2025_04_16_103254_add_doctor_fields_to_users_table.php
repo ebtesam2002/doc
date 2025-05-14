@@ -17,7 +17,6 @@ return new class extends Migration
         $table->string('verification_code')->nullable();
         $table->boolean('is_verified')->default(false);
         
-        // تعديل الـ role لإضافة doctor
         $table->enum('role', ['admin', 'user', 'doctor'])->default('user')->change();
     });
 }

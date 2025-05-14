@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -23,8 +24,7 @@ class User extends Authenticatable
         'license_number',
         'verification_code',
         'is_verified',
-        'profile_picture', 
-        
+        'profile_picture',
     ];
 
     protected $hidden = [
@@ -42,7 +42,6 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
-    
     public function getProfilePictureUrlAttribute()
     {
         return $this->profile_picture 
@@ -50,13 +49,11 @@ class User extends Authenticatable
             : asset('default-avatar.png');
     }
 
-   
     public function getScheduleAttribute($value)
     {
         return json_decode($value); 
     }
 
-       
     public function favouriteDoctors()
     {
         return $this->belongsToMany(User::class, 'favourites', 'user_id', 'doctor_id')
@@ -64,10 +61,42 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-   
     public function favouredByUsers()
     {
         return $this->belongsToMany(User::class, 'favourites', 'doctor_id', 'user_id')
             ->withTimestamps();
     }
+
+    // ✅ العلاقة مع جدول المواعيد
+    public function schedules()
+    {
+        return $this->hasMany(DoctorSchedule::class, 'doctor_id');
+    }
+
+        public function doctorRatings()
+    {
+        return $this->hasMany(Rating::class, 'doctor_id');
+    }
+
+ public function getAverageRatingAttribute()
+{
+    $average = $this->doctorRatings()->whereNotNull('rate')->avg('rate');
+
+    return round(max($average ?? 0, 3), 1); // أقل شيء 3
+}
+// في نموذج User (App\Models\User)
+
+public function ratings()
+{
+    return $this->hasMany(Rating::class, 'doctor_id');  // افترضنا أن الـ ratings تحتوي على عمود doctor_id للإشارة للطبيب.
+}
+
+public function getTotalRatingsCountAttribute()
+{
+    return $this->doctorRatings()->whereNotNull('rate')->count();  // حساب عدد التقييمات
+}
+
+
+
+
 }

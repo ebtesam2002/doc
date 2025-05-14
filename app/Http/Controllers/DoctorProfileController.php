@@ -9,28 +9,35 @@ use Illuminate\Support\Facades\Storage;
 class DoctorProfileController extends Controller
 {
     public function show()
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
 
-        if ($user->role !== 'doctor') {
-            return response()->json(['status' => false, 'message' => 'Unauthorized'], 403);
-        }
-
-        return response()->json([
-            'status' => true,
-            'data' => [
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'location' => $user->location,
-                'specialization' => $user->specialization,
-                'license_number' => $user->license_number,
-                'profile_picture' => $user->profile_picture
-                    ? asset('storage/' . $user->profile_picture)
-                    : null,
-            ],
-        ]);
+    if ($user->role !== 'doctor') {
+        return response()->json(['status' => false, 'message' => 'Unauthorized'], 403);
     }
+
+    // استدعاء الدوال لحساب متوسط التقييم وعدد التقييمات
+    $averageRating = $user->average_rating;  // استدعاء الـ accessor الخاص بمتوسط التقييم
+    $totalRatings = $user->total_ratings_count;  // استدعاء الـ accessor الخاص بعدد التقييمات
+
+    return response()->json([
+        'status' => true,
+        'data' => [
+            'username' => $user->username,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'location' => $user->location,
+            'specialization' => $user->specialization,
+            'license_number' => $user->license_number,
+            'profile_picture' => $user->profile_picture
+                ? asset('storage/' . $user->profile_picture)
+                : null,
+            'average_rating' => $averageRating,  // إضافة متوسط التقييم
+            'total_ratings' => $totalRatings,  // إضافة عدد التقييمات
+        ],
+    ]);
+}
+
 
     public function update(Request $request)
     {

@@ -7,15 +7,18 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str; 
+use Illuminate\Support\Str;
 use App\Events\DoctorRegistered;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class DoctorAuthController extends Controller
 {
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|unique:users,username',
+            'username' => 'required|string', // username is no longer unique
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|unique:users,phone',
             'location' => 'required|string',
@@ -143,23 +146,129 @@ class DoctorAuthController extends Controller
 
         return response()->json(['message' => 'Password changed successfully']);
     }
+public function getDoctorsBySpecialization($specialization)
+{
+    $doctors = User::where('role', 'doctor')
+                    ->where('specialization', $specialization)
+                    ->with('ratings') // تحميل التقييمات
+                    ->select('id', 'username', 'profile_picture', 'specialization')
+                    ->get();
 
-    public function getDoctorsBySpecialization($specialization)
+    return response()->json([
+        'status' => true,
+        'doctors' => $doctors->map(function ($doctor) {
+            return [
+                'name' => $doctor->username,
+                'image' => asset('storage/' . $doctor->profile_picture),
+                'specialization' => $doctor->specialization,
+                'average_rating' => $doctor->average_rating, // استخدام الـ accessor لحساب المتوسط
+            ];
+        })
+    ]);
+}
+public function getDoctorProfile($id)
+{
+    $doctor = User::with(['schedules', 'ratings']) // اجلب التقييمات مع الجدول الخاص بالمواعيد
+        ->where('id', $id)
+        ->where('role', 'doctor')
+        ->first();
+
+    if (!$doctor) {
+        return response()->json(['message' => 'Doctor not found'], 404);
+    }
+
+    // استدعاء دالة Accessor مباشرة لحساب متوسط التقييم
+    $averageRating = $doctor->average_rating;  // هنا استدعي الـ accessor الذي يحدد متوسط التقييم
+
+    return response()->json([
+        'status' => true,
+        'doctor' => [
+            'name' => $doctor->username,
+            'specialization' => $doctor->specialization,
+            'image' => asset('storage/' . $doctor->profile_picture),
+            'average_rating' => $averageRating,  // إضافة متوسط التقييم
+        ],
+        'schedules' => $doctor->schedules->map(function ($schedule) {
+            return [
+                'day' => $schedule->day,
+                'start_time' => $schedule->start_time,
+                'end_time' => $schedule->end_time,
+                'booking_price' => $schedule->booking_price,
+                'address' => $schedule->address,
+            ];
+        }),
+    ]);
+}
+
+    public function forgotPassword(Request $request)
     {
-        $doctors = User::where('role', 'doctor')
-                        ->where('specialization', $specialization)
-                        ->select('id', 'username', 'profile_picture', 'specialization')
-                        ->get();
+        $request->validate([
+            'email' => 'required|email|exists:users,email'
+        ]);
+
+        $code = rand(1000, 9999);
+
+        DB::table('password_resets_codes')->where('email', $request->email)->delete();
+
+        DB::table('password_resets_codes')->insert([
+            'email' => $request->email,
+            'code' => $code,
+            'created_at' => now(),
+            'verified' => false
+        ]);
+
+        Mail::raw("Your password reset code is: $code", function ($message) use ($request) {
+            $message->to($request->email)->subject('Password Reset Code');
+        });
+
+        return response()->json(['message' => 'Verification code sent to your email.']);
+    }
+
+    public function verifyCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|digits:4',
+        ]);
+
+        $record = DB::table('password_resets_codes')
+                    ->where('code', $request->code)
+                    ->first();
+
+        if (!$record) {
+            return response()->json(['message' => 'Invalid code'], 400);
+        }
+
+        DB::table('password_resets_codes')
+            ->where('code', $request->code)
+            ->update(['verified' => true]);
 
         return response()->json([
-            'status' => true,
-            'doctors' => $doctors->map(function ($doctor) {
-                return [
-                    'name' => $doctor->username,
-                    'image' => asset('storage/' . $doctor->profile_picture), 
-                    'specialization' => $doctor->specialization,
-                ];
-            })
+            'message' => 'Code verified successfully.',
+            'email' => $record->email
         ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->letters()->numbers()->symbols()],
+        ]);
+
+        $record = DB::table('password_resets_codes')
+                    ->where('email', $request->email)
+                    ->where('verified', true)
+                    ->first();
+
+        if (!$record) {
+            return response()->json(['message' => 'You must verify the code first.'], 403);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        $user->update(['password' => Hash::make($request->password)]);
+
+        DB::table('password_resets_codes')->where('email', $request->email)->delete();
+
+        return response()->json(['message' => 'Password reset successful.']);
     }
 }

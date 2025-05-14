@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Notifications\DoctorApprovedNotification;
+use App\Notifications\DoctorRejectedNotification;
+
 
 class DoctorController extends Controller
 {
@@ -26,16 +29,22 @@ class DoctorController extends Controller
         $doctor->is_approved = 1;
         $doctor->save();
 
-        return response()->json(['message' => 'Doctor approved']);
+        $doctor->notify(new DoctorApprovedNotification());
+
+        return response()->json(['message' => 'Doctor approved and email sent']);
     }
 
-    
-    public function rejectDoctor($id)
+
+        
+        public function rejectDoctor($id)
     {
         $doctor = User::where('role', 'doctor')->findOrFail($id);
         $doctor->is_approved = 0;
         $doctor->save();
 
-        return response()->json(['message' => 'Doctor rejected']);
+        $doctor->notify(new DoctorRejectedNotification());
+
+        return response()->json(['message' => 'Doctor rejected and email sent']);
     }
+
 }

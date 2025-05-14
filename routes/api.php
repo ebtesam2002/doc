@@ -13,15 +13,15 @@ use App\Http\Middleware\CheckAdmin;
 use App\Http\Controllers\FavouriteController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\DoctorBookingController;
-
+use App\Http\Controllers\RatingRequestController;
+use App\Http\Controllers\Api\PrescriptionController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
-Route::match(['post', 'put'], '/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/verify-code', [AuthController::class, 'verifyCode']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->middleware(['signed'])->name('verification.verify');
-
-// 🔐 Protected User Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
@@ -31,11 +31,13 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // 🧑‍⚕️ Doctor Auth Routes
-Route::prefix('doctor')->group(function () {
+    Route::prefix('doctor')->group(function () {
     Route::post('/register', [DoctorAuthController::class, 'register']);
     Route::post('/verify', [DoctorAuthController::class, 'verify']);
     Route::post('/login', [DoctorAuthController::class, 'login']);
-
+    Route::post('/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
+    Route::post('/verify-code', [DoctorAuthController::class, 'verifyCode']);
+    Route::post('/reset-password', [DoctorAuthController::class, 'resetPassword']);
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/change-password', [DoctorAuthController::class, 'changePassword']);
     });
@@ -45,6 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/doctor/profile', [DoctorProfileController::class, 'show']);
     Route::post('/doctor/profile/update', [DoctorProfileController::class, 'update']);
 });
+
+
 
 
 Route::prefix('admin')->group(function () {
@@ -60,6 +64,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/doctors/reject/{id}', [DoctorController::class, 'rejectDoctor']);
     });
 });
+
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/doctor-schedules', [DoctorScheduleController::class, 'index']);
     Route::post('/doctor-schedules', [DoctorScheduleController::class, 'store']);
@@ -75,6 +81,7 @@ Route::middleware(['auth:sanctum', CheckAdmin::class])->group(function () {
 
 
 Route::get('/doctors/specialization/{specialization}', [DoctorAuthController::class, 'getDoctorsBySpecialization']);
+Route::get('doctor/{id}/profile', [DoctorAuthController::class, 'getDoctorProfile']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/favourites', [FavouriteController::class, 'index']);
@@ -90,10 +97,32 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-
-
-
 Route::middleware('auth:api')->get('/my-patients', [DoctorBookingController::class, 'myPatients']);
+
+Route::get('/admin/statistics', [\App\Http\Controllers\Api\Admin\StatisticsController::class, 'index']);
+Route::get('/admin/charts', [\App\Http\Controllers\Api\Admin\ChartController::class, 'index']);
+
+
+
+// routes/api.php
+Route::get('/send-rating-requests', [RatingRequestController::class, 'sendRequests']);
+
+
+// routes/api.php
+Route::post('/submit-rating', [RatingRequestController::class, 'submitRating'])->middleware('auth:sanctum');
+
+
+// للدكتور
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/doctor/prescriptions', [PrescriptionController::class, 'store']);
+    Route::get('/doctor/prescriptions/count', [PrescriptionController::class, 'count']);
+});
+
+// للمستخدم
+Route::middleware(['auth:sanctum'])->get('/user/prescriptions', [PrescriptionController::class, 'myPrescriptions']);
+
+
+
 
 
 
