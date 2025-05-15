@@ -16,49 +16,50 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 class DoctorAuthController extends Controller
 {
     public function register(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'username' => 'required|string', // username is no longer unique
-            'email' => 'required|email|unique:users,email',
-            'phone' => 'required|string|unique:users,phone',
-            'location' => 'required|string',
-            'specialization' => 'required|string',
-            'license_number' => 'required|digits_between:5,7|unique:users,license_number',
-            'password' => [
-                'required',
-                'string',
-                'min:6',
-                'confirmed',
-                'regex:/^(?=.*[a-zA-Z])(?=.*\d).+$/'
-            ],
-        ], [
-            'password.regex' => 'The password must contain at least one letter and one number.',
-        ]);
+{
+    $validator = Validator::make($request->all(), [
+        'username' => 'required|string', // not unique anymore
+        'email' => 'required|email|unique:users,email',
+        'phone' => 'required|string|unique:users,phone',
+        'location' => 'required|string',
+        'specialization' => 'required|string',
+        'license_number' => 'required|digits_between:5,7|unique:users,license_number',
+        'password' => [
+            'required',
+            'string',
+            'min:6',
+            'confirmed',
+            'regex:/^(?=.*[a-zA-Z])(?=.*\d).+$/'
+        ],
+    ], [
+        'password.regex' => 'The password must contain at least one letter and one number.',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $verificationCode = Str::random(6);
-
-        $user = User::create([
-            'username' => $request->username,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'location' => $request->location,
-            'specialization' => $request->specialization,
-            'license_number' => $request->license_number,
-            'password' => Hash::make($request->password),
-            'role' => 'doctor',
-            'verification_code' => $verificationCode,
-        ]);
-
-        event(new DoctorRegistered($user));
-
-        return response()->json([
-            'message' => 'Doctor registered successfully. Please check your email for verification code.',
-        ]);
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
     }
+
+    $verificationCode = Str::random(6);
+
+    $user = User::create([
+        'username' => $request->username,
+        'email' => $request->email,
+        'phone' => $request->phone,
+        'location' => $request->location,
+        'specialization' => $request->specialization,
+        'license_number' => $request->license_number,
+        'password' => Hash::make($request->password),
+        'role' => 'doctor',
+        'verification_code' => $verificationCode,
+    ]);
+
+    event(new DoctorRegistered($user));
+
+    return response()->json([
+        'message' => 'Doctor registered successfully. Please check your email for verification code.',
+    ]);
+}
+
 
     public function verify(Request $request)
     {

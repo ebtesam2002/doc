@@ -61,4 +61,25 @@ public function submitRating(Request $request)
     return response()->json(['message' => 'Rating submitted successfully.']);
 }
 
+
+public function pendingRatings()
+{
+    $ratings = Rating::where('user_id', auth()->id())
+        ->whereNull('rate')
+        ->where('is_requested', true)
+        ->with(['doctor:id,username']) // eager loading doctor info
+        ->get();
+
+    $data = $ratings->map(function ($rating) {
+        return [
+            'rating_id' => $rating->id,
+            'doctor_name' => $rating->doctor->username,
+            'stars' => [1, 2, 3, 4, 5], // client can use to display rating stars
+        ];
+    });
+
+    return response()->json($data);
+}
+
+
 }

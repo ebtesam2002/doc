@@ -9,18 +9,20 @@ use Illuminate\Support\Facades\Auth;
 class FavouriteController extends Controller
 {
     public function index()
-    {
-        $favourites = Auth::user()->favouriteDoctors()->get();
+{
+    $favourites = Auth::user()->favouriteDoctors()->get();
 
-        return response()->json($favourites->map(function ($doctor) {
-            return [
-                'id' => $doctor->id,
-                'name' => $doctor->username,
-                'profile_picture' => $doctor->profile_picture,
-                'specialization' => $doctor->specialization ?? null, 
-            ];
-        }));
-    }
+    return response()->json($favourites->map(function ($doctor) {
+        return [
+            'id' => $doctor->id,
+            'name' => $doctor->username,
+            'profile_picture' => $doctor->profile_picture,
+            'specialization' => $doctor->specialization ?? null,
+            'average_rate' => $doctor->average_rating, // ✅ استدعاء الـ Accessor
+        ];
+    }));
+}
+
 
     public function store(Request $request)
     {

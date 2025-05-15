@@ -74,11 +74,12 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-Route::middleware(['auth:sanctum', CheckAdmin::class])->group(function () {
-    Route::delete('/admin/delete/{id}', [AdminManageController::class, 'destroy']);
+Route::prefix('admin')->group(function () {
+    Route::get('/users', [AdminManageController::class, 'getUsers']);     // عرض المستخدمين فقط
+    Route::get('/doctors', [AdminManageController::class, 'getDoctors']); // عرض الدكاترة فقط
 });
 
-
+Route::delete('admin/users/{id}', [AdminManageController::class,'destroy']);
 
 Route::get('/doctors/specialization/{specialization}', [DoctorAuthController::class, 'getDoctorsBySpecialization']);
 Route::get('doctor/{id}/profile', [DoctorAuthController::class, 'getDoctorProfile']);
@@ -106,6 +107,7 @@ Route::get('/admin/charts', [\App\Http\Controllers\Api\Admin\ChartController::cl
 
 // routes/api.php
 Route::get('/send-rating-requests', [RatingRequestController::class, 'sendRequests']);
+Route::middleware('auth:sanctum')->get('/ratings/pending', [RatingRequestController::class, 'pendingRatings']);
 
 
 // routes/api.php

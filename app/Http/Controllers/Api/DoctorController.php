@@ -13,14 +13,24 @@ class DoctorController extends Controller
 {
     
     public function pendingDoctors()
-    {
-        $pendingDoctors = User::where('role', 'doctor')
-            ->where('is_verified', true)
-            ->whereNull('is_approved')
-            ->get(['id', 'username', 'email', 'phone', 'specialization', 'license_number']);
+{
+    $pendingDoctors = User::where('role', 'doctor')
+        ->where('is_verified', true)
+        ->whereNull('is_approved')
+        ->get([
+            'id',
+            'username',
+            'email',
+            'phone',
+            'specialization',
+            'license_number',
+            'profile_picture',
+            'location'
+        ]);
 
-        return response()->json($pendingDoctors);
-    }
+    return response()->json($pendingDoctors);
+}
+
 
     
     public function approveDoctor($id)
