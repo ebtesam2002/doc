@@ -1,3 +1,4 @@
+> Ebtesam:
 <?php
 
 namespace App\Http\Controllers\Api;
@@ -121,7 +122,9 @@ class DoctorAuthController extends Controller
     }
 
     public function changePassword(Request $request)
-    {
+
+> Ebtesam:
+{
         $request->validate([
             'old_password' => 'required|string',
             'new_password' => [
@@ -149,7 +152,7 @@ class DoctorAuthController extends Controller
     }
 public function getDoctorsBySpecialization($specialization)
 {
-    $doctors = User::where('role', 'doctor')
+      $doctors = User::where('role', 'doctor')
                     ->where('specialization', $specialization)
                     ->with('ratings') // تحميل التقييمات
                     ->select('id', 'username', 'profile_picture', 'specialization')
@@ -159,10 +162,12 @@ public function getDoctorsBySpecialization($specialization)
         'status' => true,
         'doctors' => $doctors->map(function ($doctor) {
             return [
+                'doctor_id' => $doctor->id, 
                 'name' => $doctor->username,
                 'image' => asset('storage/' . $doctor->profile_picture),
                 'specialization' => $doctor->specialization,
-                'average_rating' => $doctor->average_rating, // استخدام الـ accessor لحساب المتوسط
+                'average_rating' => $doctor->average_rating,
+
             ];
         })
     ]);
@@ -243,7 +248,8 @@ public function getDoctorProfile($id)
             ->where('code', $request->code)
             ->update(['verified' => true]);
 
-        return response()->json([
+> Ebtesam:
+return response()->json([
             'message' => 'Code verified successfully.',
             'email' => $record->email
         ]);
